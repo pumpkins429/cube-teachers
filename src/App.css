@@ -1,0 +1,509 @@
+:root {
+  --bg: #f3efe5;
+  --surface: rgba(255, 252, 245, 0.88);
+  --surface-strong: #fffaf0;
+  --ink: #1e2430;
+  --muted: #5f6775;
+  --line: rgba(38, 46, 61, 0.12);
+  --accent: #d95d39;
+  --accent-soft: #ffe1d7;
+  --accent-strong: #b74727;
+  --shadow: 0 18px 48px rgba(71, 47, 24, 0.12);
+  --cube-white: #f8f4ec;
+  --cube-yellow: #f5c94a;
+  --cube-green: #48b178;
+  --cube-blue: #4f7cff;
+  --cube-red: #df5a4f;
+  --cube-orange: #f39a4c;
+}
+
+body {
+  font-family: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(255, 214, 153, 0.45), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(145, 193, 255, 0.28), transparent 30%),
+    linear-gradient(180deg, #f8f4ea 0%, #f0eadf 100%);
+}
+
+button {
+  font: inherit;
+}
+
+.app {
+  min-height: 100vh;
+  padding: 28px;
+}
+
+.hero {
+  max-width: 1400px;
+  margin: 0 auto 24px;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: var(--surface);
+  backdrop-filter: blur(18px);
+  box-shadow: var(--shadow);
+  display: grid;
+  grid-template-columns: 1.7fr 0.9fr;
+  gap: 20px;
+}
+
+.eyebrow {
+  margin-bottom: 8px;
+  color: var(--accent-strong);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  font-size: clamp(2rem, 4vw, 3.8rem);
+  line-height: 1.06;
+  margin-bottom: 12px;
+}
+
+.hero-copy {
+  max-width: 42rem;
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.hero-card,
+.viewer-card,
+.info-card,
+.sidebar {
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--surface);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow);
+}
+
+.hero-card {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-self: stretch;
+  justify-content: center;
+}
+
+.hero-card-label,
+.label,
+.badge,
+.lesson-order,
+.lesson-level {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hero-card strong {
+  font-size: 1.25rem;
+  line-height: 1.5;
+}
+
+.hero-card button,
+.controls button,
+.speed-buttons button,
+.lesson-item {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.hero-card button,
+.controls button,
+.speed-buttons button {
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.hero-card button {
+  align-self: flex-start;
+  padding: 10px 16px;
+  background: var(--accent);
+  color: #fff;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hero-actions button:last-child {
+  background: #fff;
+  color: var(--accent-strong);
+  border: 1px solid rgba(217, 93, 57, 0.22);
+}
+
+.hero-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.layout {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 24px;
+}
+
+.sidebar {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.sidebar-section h2,
+.sidebar-section h3,
+.info-card h3 {
+  margin-bottom: 8px;
+  font-size: 1.1rem;
+}
+
+.sidebar-section p,
+.info-card p,
+.info-card li,
+.formula-card p,
+.step-card p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.lesson-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.track-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.track-tabs button {
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.58);
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.track-tabs button.active {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  border-color: rgba(217, 93, 57, 0.22);
+}
+
+.lesson-item {
+  width: 100%;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface-strong);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.lesson-item strong {
+  line-height: 1.35;
+}
+
+.lesson-item.selected {
+  background: linear-gradient(135deg, var(--accent-soft), rgba(255, 248, 241, 0.95));
+  border-color: rgba(217, 93, 57, 0.3);
+}
+
+.lesson-level,
+.lesson-order,
+.badge,
+.label {
+  color: var(--accent-strong);
+}
+
+.notation-help {
+  padding-top: 4px;
+}
+
+.notation-help p + p {
+  margin-top: 8px;
+}
+
+.viewer-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.viewer-card {
+  padding: 22px;
+}
+
+.viewer-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.viewer-header h2 {
+  font-size: 2rem;
+  margin-top: 4px;
+}
+
+.progress-block {
+  min-width: 220px;
+}
+
+.progress-block span {
+  display: block;
+  margin-bottom: 8px;
+  text-align: right;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(30, 36, 48, 0.08);
+  overflow: hidden;
+}
+
+.progress-bar div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff9b71, var(--accent));
+}
+
+.cube-container {
+  height: 520px;
+  border-radius: 22px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #111827 0%, #1e293b 100%);
+}
+
+.controls-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.formula-card,
+.step-card,
+.speed-control,
+.editor-card {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.formula-card strong,
+.step-card strong {
+  display: block;
+  margin: 8px 0 6px;
+  font-size: 1.2rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.controls {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.controls button,
+.speed-buttons button {
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid rgba(30, 36, 48, 0.1);
+}
+
+.controls button {
+  padding: 12px 18px;
+}
+
+.controls button:nth-child(2) {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
+}
+
+.controls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.speed-buttons {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.speed-buttons button {
+  padding: 9px 14px;
+}
+
+.speed-buttons button.active {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  border-color: rgba(217, 93, 57, 0.18);
+}
+
+.editor-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.editor-actions button {
+  min-height: 34px;
+  padding: 7px 12px;
+  border: 1px solid rgba(30, 36, 48, 0.1);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.editor-actions button.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
+}
+
+.color-palette {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(38px, 1fr));
+  gap: 8px;
+}
+
+.color-palette button {
+  aspect-ratio: 1;
+  border: 2px solid rgba(30, 36, 48, 0.15);
+  border-radius: 12px;
+  color: rgba(0, 0, 0, 0.72);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.color-palette button.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(217, 93, 57, 0.18);
+}
+
+.validation-ok,
+.validation-error {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.validation-ok {
+  color: #268354;
+}
+
+.validation-error {
+  color: var(--accent-strong);
+}
+
+.lesson-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.info-card {
+  padding: 22px;
+}
+
+.info-card ul {
+  padding-left: 18px;
+}
+
+.info-card li + li {
+  margin-top: 10px;
+}
+
+.hero-card button:hover,
+.controls button:hover:not(:disabled),
+.speed-buttons button:hover,
+.lesson-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 1100px) {
+  .hero,
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .lesson-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .app {
+    padding: 16px;
+  }
+
+  .hero,
+  .sidebar,
+  .viewer-card,
+  .info-card {
+    border-radius: 20px;
+  }
+
+  .viewer-header,
+  .controls-panel {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .progress-block {
+    min-width: 0;
+  }
+
+  .progress-block span {
+    text-align: left;
+  }
+
+  .cube-container {
+    height: 360px;
+  }
+
+  .controls {
+    flex-direction: column;
+  }
+}
