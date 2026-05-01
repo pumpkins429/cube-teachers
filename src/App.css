@@ -260,6 +260,107 @@ button {
   margin-bottom: 18px;
 }
 
+.workflow-strip {
+  margin-bottom: 18px;
+  padding: 16px 18px;
+  border: 1px solid rgba(217, 93, 57, 0.15);
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(255, 245, 237, 0.95), rgba(255, 251, 246, 0.86));
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(240px, 0.9fr);
+  gap: 18px;
+}
+
+.workflow-strip.active {
+  border-color: rgba(217, 93, 57, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(217, 93, 57, 0.08);
+}
+
+.workflow-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.workflow-step {
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(30, 36, 48, 0.08);
+  background: rgba(255, 255, 255, 0.72);
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.workflow-step span {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(30, 36, 48, 0.08);
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.workflow-step strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.98rem;
+}
+
+.workflow-step p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.workflow-step.active {
+  border-color: rgba(217, 93, 57, 0.28);
+  background: linear-gradient(135deg, rgba(255, 232, 221, 0.96), rgba(255, 248, 242, 0.92));
+}
+
+.workflow-step.active span,
+.workflow-step.done span {
+  background: var(--accent);
+  color: #fff;
+}
+
+.workflow-summary {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(30, 36, 48, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.workflow-summary strong {
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.workflow-summary button {
+  align-self: flex-start;
+  min-height: 42px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+.workflow-summary button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .viewer-header h2 {
   font-size: 2rem;
   margin-top: 4px;
@@ -298,6 +399,80 @@ button {
   background: linear-gradient(180deg, #111827 0%, #1e293b 100%);
 }
 
+.session-shell {
+  display: block;
+}
+
+.cube-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.workflow-shell {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.editor-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.editor-shell .cube-stage,
+.editor-shell .workflow-controls-panel {
+  grid-column: auto;
+}
+
+.editor-shell .workflow-controls-panel {
+  margin-top: 0;
+}
+
+.workflow-shell .cube-stage {
+  grid-column: 2;
+}
+
+.workflow-shell .workflow-controls-panel {
+  grid-column: 1;
+  margin-top: 0;
+  grid-template-columns: 1fr;
+}
+
+.stage-summary-card {
+  padding: 16px 18px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.stage-summary-card strong {
+  display: block;
+  margin: 8px 0 6px;
+  font-size: 1.15rem;
+}
+
+.stage-summary-card p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.editor-workbench-card {
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.editor-workbench-card strong {
+  display: block;
+  margin: 8px 0 10px;
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
 .controls-panel {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -305,14 +480,36 @@ button {
   margin-top: 18px;
 }
 
+.status-overview {
+  background: linear-gradient(135deg, rgba(255, 248, 242, 0.98), rgba(255, 252, 247, 0.92));
+}
+
 .formula-card,
 .step-card,
 .speed-control,
-.editor-card {
+.editor-card,
+.workflow-card {
   padding: 18px;
   border: 1px solid var(--line);
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.55);
+}
+
+.workflow-card {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, rgba(255, 240, 230, 0.96), rgba(255, 248, 241, 0.9));
+}
+
+.workflow-card strong {
+  display: block;
+  margin: 8px 0 6px;
+  font-size: 1.1rem;
+  line-height: 1.4;
+}
+
+.workflow-card p {
+  color: var(--muted);
+  line-height: 1.7;
 }
 
 .formula-card strong,
@@ -362,20 +559,43 @@ button {
   flex-wrap: wrap;
 }
 
+.mode-buttons {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .speed-buttons button {
   padding: 9px 14px;
 }
 
-.speed-buttons button.active {
+.speed-buttons button.active,
+.mode-buttons button.active {
   background: var(--accent-soft);
   color: var(--accent-strong);
   border-color: rgba(217, 93, 57, 0.18);
+}
+
+.mode-buttons button {
+  min-height: 36px;
+  padding: 9px 14px;
+  border: 1px solid rgba(30, 36, 48, 0.1);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 
 .editor-card {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.editor-card.expanded {
+  grid-column: 1 / -1;
 }
 
 .editor-actions {
@@ -436,6 +656,91 @@ button {
   color: var(--accent-strong);
 }
 
+.face-net-wrapper {
+  padding-top: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.face-net-hint p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.face-net {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+.face-net-panel {
+  padding: 10px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(30, 36, 48, 0.08);
+}
+
+.face-net-panel span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.face-net-up {
+  grid-column: 2;
+}
+
+.face-net-left {
+  grid-column: 1;
+}
+
+.face-net-front {
+  grid-column: 2;
+}
+
+.face-net-right {
+  grid-column: 3;
+}
+
+.face-net-back {
+  grid-column: 4;
+}
+
+.face-net-down {
+  grid-column: 2;
+}
+
+.face-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.face-cell {
+  aspect-ratio: 1;
+  border: 2px solid rgba(20, 22, 28, 0.14);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+
+.face-cell:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(20, 22, 28, 0.12);
+}
+
+.face-cell.center {
+  cursor: not-allowed;
+  border-color: rgba(20, 22, 28, 0.28);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.48);
+}
+
 .lesson-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -457,6 +762,7 @@ button {
 .hero-card button:hover,
 .controls button:hover:not(:disabled),
 .speed-buttons button:hover,
+.mode-buttons button:hover,
 .lesson-item:hover {
   transform: translateY(-1px);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
@@ -465,6 +771,19 @@ button {
 @media (max-width: 1100px) {
   .hero,
   .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .workflow-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .workflow-shell .cube-stage,
+  .workflow-shell .workflow-controls-panel {
+    grid-column: auto;
+  }
+
+  .workflow-strip {
     grid-template-columns: 1fr;
   }
 
@@ -491,6 +810,10 @@ button {
     display: grid;
   }
 
+  .workflow-steps {
+    grid-template-columns: 1fr;
+  }
+
   .progress-block {
     min-width: 0;
   }
@@ -501,6 +824,19 @@ button {
 
   .cube-container {
     height: 360px;
+  }
+
+  .face-net {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .face-net-up,
+  .face-net-left,
+  .face-net-front,
+  .face-net-right,
+  .face-net-back,
+  .face-net-down {
+    grid-column: auto;
   }
 
   .controls {

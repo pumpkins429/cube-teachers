@@ -9,6 +9,7 @@ import {
   formatMove,
   generateScramble,
   invertMove,
+  invertMoves,
   parseNotation,
   setStickerColor,
   type Color,
@@ -32,6 +33,7 @@ type Lesson = {
 
 type PlaybackMode = 'auto' | 'single' | null;
 type Speed = 0.75 | 1 | 1.5 | 2;
+type SessionMode = 'demo' | 'follow';
 
 const TRACKS: Array<Track | '全部'> = ['全部', '基础手法', '白十字', 'F2L', 'OLL', 'PLL'];
 
@@ -43,6 +45,7 @@ type PracticeSequence = {
   goal: string;
   whyItMatters: string;
   tips: string[];
+  stepNotes: string[];
   initialState: CubeState;
   moves: Move[];
 };
@@ -286,6 +289,10 @@ function getStepStates(initialState: CubeState, moves: Move[]): CubeState[] {
   return states;
 }
 
+function buildStepNotes(moves: Move[]): string[] {
+  return moves.map((move, index) => `第 ${index + 1} 手：执行 ${formatMove(move)}，留意这一层转完后相关角块和棱块的位置变化。`);
+}
+
 function sequenceFromSolverPlan(plan: SolverPlan, type: PracticeSequence['type']): PracticeSequence {
   const moves = plan.steps.map(step => step.move);
 
@@ -299,9 +306,64 @@ function sequenceFromSolverPlan(plan: SolverPlan, type: PracticeSequence['type']
     tips: plan.steps.length > 0
       ? plan.steps.slice(0, 4).map(step => `${step.stage}: ${step.explanation}`)
       : ['这个状态已经是复原状态。'],
+    stepNotes: plan.steps.length > 0 ? plan.steps.map(step => step.explanation) : [],
     initialState: plan.initialState,
     moves,
   };
+}
+
+function FaceEditorNet({
+  state,
+  selectedColor,
+  onStickerClick,
+}: {
+  state: CubeState;
+  selectedColor: Color;
+  onStickerClick: (selection: StickerSelection) => void;
+}) {
+  const faceLayout: Array<{ face: keyof CubeState; label: string; className: string }> = [
+    { face: 'U', label: '上', className: 'face-net-up' },
+    { face: 'L', label: '左', className: 'face-net-left' },
+    { face: 'F', label: '前', className: 'face-net-front' },
+    { face: 'R', label: '右', className: 'face-net-right' },
+    { face: 'B', label: '后', className: 'face-net-back' },
+    { face: 'D', label: '下', className: 'face-net-down' },
+  ];
+
+  return (
+    <div className="face-net-wrapper">
+      <div className="face-net-hint">
+        <span className="label">平面录入</span>
+        <p>当前画笔：{COLOR_LABELS[selectedColor]}色。中心块固定不变，点格子会直接填色。</p>
+      </div>
+      <div className="face-net">
+        {faceLayout.map(({ face, label, className }) => (
+          <div key={face} className={`face-net-panel ${className}`}>
+            <span>{label}面</span>
+            <div className="face-grid">
+              {state[face].map((row, rowIndex) => (
+                row.map((color, colIndex) => {
+                  const isCenter = rowIndex === 1 && colIndex === 1;
+
+                  return (
+                    <button
+                      key={`${face}-${rowIndex}-${colIndex}`}
+                      type="button"
+                      disabled={isCenter}
+                      className={isCenter ? 'face-cell center' : 'face-cell'}
+                      style={{ backgroundColor: `var(--cube-${color})` }}
+                      onClick={() => onStickerClick({ face, row: rowIndex, col: colIndex })}
+                      title={`${label}面 ${rowIndex + 1}-${colIndex + 1}`}
+                    />
+                  );
+                })
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function App() {
@@ -316,6 +378,7 @@ function App() {
   const [practiceSequence, setPracticeSequence] = useState<PracticeSequence | null>(null);
   const [lastScramble, setLastScramble] = useState<{ notation: string; moves: Move[]; state: CubeState } | null>(null);
   const [isEditorMode, setIsEditorMode] = useState(false);
+  const [sessionMode, setSessionMode] = useState<SessionMode>('demo');
   const [selectedColor, setSelectedColor] = useState<Color>('white');
   const [editorState, setEditorState] = useState<CubeState>(SOLVED_CUBE);
   const [editorNotice, setEditorNotice] = useState<string[]>([]);
@@ -330,38 +393,68 @@ function App() {
     [selectedTrack],
   );
   const lessonMoves = useMemo(() => expandMoves(parseNotation(selectedLesson.notation)), [selectedLesson.notation]);
+  const lessonInitialState = useMemo(
+    () => applyMoves(SOLVED_CUBE, invertMoves(lessonMoves)),
+    [lessonMoves],
+  );
   const editorValidation = useMemo(() => validateCubeState(editorState), [editorState]);
   const moves = practiceSequence?.moves ?? lessonMoves;
-  const initialState = practiceSequence?.initialState ?? SOLVED_CUBE;
+  const initialState = practiceSequence?.initialState ?? lessonInitialState;
+  const isFollowSession = !isEditorMode && sessionMode === 'follow';
+  const isManualSolveSession = practiceSequence?.type === 'manual';
+  const isWorkflowSession = isEditorMode || isManualSolveSession;
   const displayTitle = isEditorMode ? '手动录入魔方' : practiceSequence?.title ?? selectedLesson.title;
-  const displayBadge = isEditorMode ? '录入模式' : practiceSequence?.label ?? `${selectedLesson.track} · ${selectedLesson.level}`;
-  const displayNotation = isEditorMode ? '选择颜色后点击模型贴纸' : practiceSequence?.notation ?? selectedLesson.notation;
+  const displayBadge = isEditorMode ? '录入模式' : practiceSequence?.label ?? `${selectedLesson.track} · ${selectedLesson.level} · 案例演示`;
+  const displayNotation = isEditorMode ? '选择颜色后点击 2D 展开图或 3D 模型贴纸' : practiceSequence?.notation ?? selectedLesson.notation;
   const displayGoal = isEditorMode
-    ? `当前选择：${COLOR_LABELS[selectedColor]}色。${editorValidation.valid ? '基础校验通过。' : '请先修正颜色数量或中心色。'}`
-    : practiceSequence?.goal ?? selectedLesson.goal;
+    ? `当前选择：${COLOR_LABELS[selectedColor]}色。${editorValidation.valid ? '基础校验通过，可以直接求解。' : '请先修正颜色数量或中心色。'}`
+    : practiceSequence?.goal ?? `从这条公式对应的典型案例开始演示：${selectedLesson.goal}`;
   const displayWhy = isEditorMode
     ? '手动录入可以模拟你手上的魔方。当前版本会做基础校验，并用 Kociemba Two-Phase 尝试生成近优复原公式。'
-    : practiceSequence?.whyItMatters ?? selectedLesson.whyItMatters;
+    : practiceSequence?.whyItMatters ?? `${selectedLesson.whyItMatters} 当前不是从复原态乱转，而是先摆出这条公式要处理的案例，再把它解回复原态。`;
   const displayTips = isEditorMode
     ? editorNotice.length > 0
       ? editorNotice
       : editorValidation.valid
         ? ['基础校验通过。点击“尝试求解”会调用本地 Kociemba 求解器。', '如果录入的是物理上不可能的状态，求解器会返回失败提示。']
         : editorValidation.issues
-    : practiceSequence?.tips ?? selectedLesson.tips;
+    : practiceSequence?.tips ?? ['先观察当前案例长什么样，再看公式如何把它解决。', ...selectedLesson.tips];
   const stepStates = useMemo(() => getStepStates(initialState, moves), [initialState, moves]);
   const activeMove = activeAnimation?.move ?? null;
   const sequenceState = stepStates[currentStep] ?? SOLVED_CUBE;
   const currentState = isEditorMode ? editorState : sequenceState;
   const currentMove = isEditorMode ? null : activeMove;
+  const currentStepNote = isEditorMode
+    ? ''
+    : practiceSequence?.stepNotes[currentStep] ?? buildStepNotes(moves)[currentStep] ?? '准备开始。';
   const progressPercent = isEditorMode || moves.length === 0
     ? 0
     : Math.round(((currentStep + (activeMove ? animationProgress : 0)) / moves.length) * 100);
   const nextMove = activeMove ?? moves[currentStep] ?? null;
   const currentMoveLabel = isEditorMode
     ? `当前颜色：${COLOR_LABELS[selectedColor]}`
-    : currentStep >= moves.length && !activeMove ? '已完成' : formatMove(nextMove);
+    : currentStep >= moves.length && !activeMove
+      ? '已完成'
+      : sessionMode === 'follow'
+        ? `轮到你：${formatMove(nextMove)}`
+        : formatMove(nextMove);
   const isAutoPlaying = playbackMode === 'auto';
+  const remainingMoves = Math.max(moves.length - currentStep, 0);
+  const workflowPhase = isEditorMode ? '录入状态' : isFollowSession ? '跟练复原' : isManualSolveSession ? '已生成解法' : '公式演示';
+  const workflowActionHint = isEditorMode
+    ? '完成录入后，直接从左侧点击“开始跟练复原”。'
+    : isFollowSession
+      ? '先在手上的魔方执行当前一步，再按回车或点按钮同步。'
+      : isManualSolveSession
+        ? '已经拿到这颗魔方的解法，可以切到跟练继续。'
+        : '当前是公式演示区，你也可以随时进入录入工作流。';
+  const workflowSummary = isEditorMode
+    ? '先录入你手上的魔方，再直接生成可跟练的复原步骤。'
+    : isManualSolveSession
+      ? isFollowSession
+        ? `还剩 ${remainingMoves} 步。你先做，系统后跟。`
+        : '已拿到解法，可以切换成跟练继续。'
+      : '当前是公式演示区。要进入完整工作流，请先录入魔方状态。';
 
   useEffect(() => {
     animationProgressRef.current = animationProgress;
@@ -406,6 +499,40 @@ function App() {
     setPlaybackMode(mode);
   };
 
+  useEffect(() => {
+    if (isEditorMode || sessionMode !== 'follow') {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Enter' || event.repeat) return;
+      event.preventDefault();
+
+      if (activeAnimation) {
+        setAnimationProgress(1);
+        return;
+      }
+
+      if (currentStep >= moves.length) {
+        setPlaybackMode(null);
+        return;
+      }
+
+      animationProgressRef.current = 0;
+      setAnimationProgress(0);
+      setActiveAnimation({
+        move: moves[currentStep],
+        fromStep: currentStep,
+        toStep: currentStep + 1,
+        mode: 'single',
+      });
+      setPlaybackMode('single');
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [activeAnimation, currentStep, isEditorMode, moves, sessionMode]);
+
   const beginReverseMove = (index: number) => {
     if (index <= 0) {
       return;
@@ -448,9 +575,14 @@ function App() {
     setAnimationProgress(0);
   };
 
-  const startPracticeSequence = (sequence: PracticeSequence, autoplay: boolean = true) => {
+  const startPracticeSequence = (
+    sequence: PracticeSequence,
+    options: { autoplay?: boolean; mode?: SessionMode } = {},
+  ) => {
+    const { autoplay = true, mode = 'demo' } = options;
     stopAnimation();
     setIsEditorMode(false);
+    setSessionMode(mode);
     setPracticeSequence(sequence);
     setCurrentStep(0);
 
@@ -470,6 +602,7 @@ function App() {
     setCurrentStep(0);
     setPracticeSequence(null);
     setIsEditorMode(false);
+    setSessionMode('demo');
     setSelectedLessonId(lessonId);
   };
 
@@ -538,9 +671,10 @@ function App() {
       goal: '按随机打乱公式把复原魔方打乱。',
       whyItMatters: '先看打乱过程，再用逆公式复原，能帮助你理解每一步都是可逆的。',
       tips: ['打乱动作会逐层旋转。', '完成后可以点击“演示复原”。', '复原会调用 Kociemba Two-Phase 生成近优公式。'],
+      stepNotes: buildStepNotes(scrambleMoves),
       initialState: SOLVED_CUBE,
       moves: scrambleMoves,
-    });
+    }, { autoplay: true, mode: 'demo' });
   };
 
   const handleSolveScramble = () => {
@@ -554,13 +688,14 @@ function App() {
       return;
     }
 
-    startPracticeSequence(sequenceFromSolverPlan(result, 'solve'));
+    startPracticeSequence(sequenceFromSolverPlan(result, 'solve'), { autoplay: true, mode: 'demo' });
   };
 
   const handleEnterEditor = () => {
     stopAnimation();
     setPracticeSequence(null);
     setIsEditorMode(true);
+    setSessionMode('demo');
     setCurrentStep(0);
     setEditorNotice([]);
   };
@@ -570,6 +705,7 @@ function App() {
     setEditorState(sequenceState);
     setPracticeSequence(null);
     setIsEditorMode(true);
+    setSessionMode('demo');
     setCurrentStep(0);
     setEditorNotice(['已把当前画面载入录入器。']);
   };
@@ -598,7 +734,29 @@ function App() {
       return;
     }
 
-    startPracticeSequence(sequenceFromSolverPlan(result, 'manual'));
+    startPracticeSequence(sequenceFromSolverPlan(result, 'manual'), { autoplay: false, mode: 'follow' });
+  };
+
+  const handleConfirmFollowStep = () => {
+    if (isEditorMode || sessionMode !== 'follow') {
+      return;
+    }
+
+    if (activeAnimation) {
+      setAnimationProgress(1);
+      return;
+    }
+
+    if (currentStep >= moves.length) {
+      return;
+    }
+
+    beginMove(currentStep, 'single');
+  };
+
+  const handleSwitchSessionMode = (mode: SessionMode) => {
+    stopAnimation();
+    setSessionMode(mode);
   };
 
   return (
@@ -608,7 +766,7 @@ function App() {
           <p className="eyebrow">Cube Teacher</p>
           <h1>魔方公式训练台</h1>
           <p className="hero-copy">
-            {LESSONS.length} 条入门到进阶公式，支持真实转层动画、单步观察和速度控制。
+            {LESSONS.length} 条入门到进阶公式，支持真实转层动画、平面录入，以及一步一确认的跟练式教学。
           </p>
         </div>
         <div className="hero-card">
@@ -676,22 +834,108 @@ function App() {
               </div>
             </div>
 
-            <div className="cube-container">
-              <CubeScene
-                cubeState={currentState}
-                currentMove={currentMove}
-                animationProgress={animationProgress}
-                onMoveComplete={handleMoveComplete}
-                isEditable={isEditorMode}
-                onStickerClick={handleStickerClick}
-              />
+            <div className={`workflow-strip ${isWorkflowSession ? 'active' : ''}`}>
+              <div className="workflow-steps">
+                <div className={`workflow-step ${isEditorMode ? 'active' : isManualSolveSession ? 'done' : ''}`}>
+                  <span>1</span>
+                  <div>
+                    <strong>录入状态</strong>
+                    <p>把你手上的魔方填进系统</p>
+                  </div>
+                </div>
+                <div className={`workflow-step ${isManualSolveSession ? (isFollowSession ? 'done' : 'active') : ''}`}>
+                  <span>2</span>
+                  <div>
+                    <strong>生成解法</strong>
+                    <p>使用本地求解器生成还原步骤</p>
+                  </div>
+                </div>
+                <div className={`workflow-step ${isFollowSession ? 'active' : isManualSolveSession && currentStep >= moves.length ? 'done' : ''}`}>
+                  <span>3</span>
+                  <div>
+                    <strong>跟练复原</strong>
+                    <p>你做一步，系统同步一步</p>
+                  </div>
+                </div>
+              </div>
+              <div className="workflow-summary">
+                <strong>{workflowSummary}</strong>
+                {isEditorMode ? (
+                  <button onClick={handleSolveEditorState} disabled={!editorValidation.valid}>
+                    开始跟练复原
+                  </button>
+                ) : isFollowSession ? (
+                  <button onClick={handleConfirmFollowStep} disabled={currentStep >= moves.length && activeAnimation === null}>
+                    {activeAnimation ? '完成当前动画' : currentStep >= moves.length ? '已全部完成' : '继续下一步'}
+                  </button>
+                ) : (
+                  <button onClick={handleEnterEditor}>
+                    录入当前魔方
+                  </button>
+                )}
+              </div>
             </div>
 
-            <div className="controls-panel">
+            <div className={`session-shell ${isEditorMode ? 'editor-shell' : isWorkflowSession ? 'workflow-shell' : ''}`}>
+              <div className="cube-stage">
+                <div className="cube-container">
+                  <CubeScene
+                    cubeState={currentState}
+                    currentMove={currentMove}
+                    animationProgress={animationProgress}
+                    onMoveComplete={handleMoveComplete}
+                    isEditable={isEditorMode}
+                    onStickerClick={handleStickerClick}
+                  />
+                </div>
+                {isWorkflowSession && (
+                  <div className="stage-summary-card">
+                    <span className="label">当前阶段</span>
+                    <strong>{workflowPhase}</strong>
+                    <p>{workflowActionHint}</p>
+                  </div>
+                )}
+                {isEditorMode && (
+                  <div className="editor-workbench-card">
+                    <span className="label">录入面板</span>
+                    <strong>优先在这里填色，右侧 3D 模型只用于核对方向。</strong>
+                    <FaceEditorNet
+                      state={editorState}
+                      selectedColor={selectedColor}
+                      onStickerClick={handleStickerClick}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className={`controls-panel ${isWorkflowSession ? 'workflow-controls-panel' : ''}`}>
+              {isWorkflowSession && (
+                <div className="workflow-card status-overview">
+                  <span className="label">当前状态</span>
+                  <strong>{workflowPhase}</strong>
+                  <p>{isEditorMode ? '录入完成后会直接用本地求解器生成步骤。' : `当前动作：${currentMoveLabel}。剩余 ${remainingMoves} 步。`}</p>
+                </div>
+              )}
+              {isEditorMode && (
+                <div className="workflow-card editor-workflow">
+                  <span className="label">录入工作流</span>
+                  <strong>先录你手上的魔方，再生成跟练式复原。</strong>
+                  <p>1. 选一个颜色。2. 优先点下面的 2D 展开图，必要时再点 3D 模型核对。3. 基础校验通过后，点“尝试求解”。</p>
+                </div>
+              )}
+
+              {isFollowSession && isManualSolveSession && (
+                <div className="workflow-card follow-workflow">
+                  <span className="label">跟练模式</span>
+                  <strong>你先做，系统后跟。</strong>
+                  <p>当前不会自动连播。你先按提示在手上的魔方执行当前一步，然后按 `Enter` 或点击“我做完了”，模型才进入下一手。</p>
+                </div>
+              )}
+
               <div className="formula-card">
                 <span className="label">公式</span>
                 <strong>{displayNotation}</strong>
-                <p>{displayGoal}</p>
+                <p>{isFollowSession ? `${displayGoal} 做完当前一步后按回车，或点击“我做完了”。` : displayGoal}</p>
               </div>
 
               <div className="step-card">
@@ -700,6 +944,7 @@ function App() {
                   第 {moves.length === 0 ? 0 : Math.min(currentStep + 1, moves.length)} / {moves.length} 步
                 </strong>
                 <p>{currentMoveLabel}</p>
+                {!isEditorMode && <p>{currentStepNote}</p>}
               </div>
 
               <div className="speed-control">
@@ -715,9 +960,25 @@ function App() {
                     </button>
                   ))}
                 </div>
+                {!isEditorMode && practiceSequence && (
+                  <div className="mode-buttons">
+                    <button
+                      className={sessionMode === 'demo' ? 'active' : ''}
+                      onClick={() => handleSwitchSessionMode('demo')}
+                    >
+                      演示模式
+                    </button>
+                    <button
+                      className={sessionMode === 'follow' ? 'active' : ''}
+                      onClick={() => handleSwitchSessionMode('follow')}
+                    >
+                      跟练模式
+                    </button>
+                  </div>
+                )}
               </div>
 
-              <div className="editor-card">
+              <div className={`editor-card ${isEditorMode ? 'expanded' : ''}`}>
                 <span className="label">手动录入</span>
                 <div className="editor-actions">
                   <button onClick={handleEnterEditor} className={isEditorMode ? 'active' : ''}>录入模式</button>
@@ -747,9 +1008,15 @@ function App() {
                 <button onClick={handleStepBack} disabled={isEditorMode || currentStep === 0 || activeAnimation !== null}>
                   上一步
                 </button>
-                <button onClick={handlePlayPause} disabled={isEditorMode}>
-                  {isAutoPlaying ? '暂停' : activeAnimation ? '继续' : currentStep >= moves.length ? '重新演示' : '播放演示'}
-                </button>
+                {sessionMode === 'follow' && !isEditorMode ? (
+                  <button onClick={handleConfirmFollowStep} disabled={currentStep >= moves.length && activeAnimation === null}>
+                    {activeAnimation ? '完成当前动画' : currentStep >= moves.length ? '已全部完成' : '我做完了'}
+                  </button>
+                ) : (
+                  <button onClick={handlePlayPause} disabled={isEditorMode}>
+                    {isAutoPlaying ? '暂停' : activeAnimation ? '继续' : currentStep >= moves.length ? '重新演示' : '播放演示'}
+                  </button>
+                )}
                 <button onClick={handleStepForward} disabled={isEditorMode || (currentStep >= moves.length && activeAnimation === null)}>
                   下一步
                 </button>
@@ -757,6 +1024,7 @@ function App() {
                   回到开头
                 </button>
               </div>
+            </div>
             </div>
           </div>
 
@@ -775,7 +1043,7 @@ function App() {
             </article>
             <article className="info-card">
               <h3>拆解</h3>
-              <p>双层动作会拆成连续两次 90 度旋转，方便观察每一次真实转层。</p>
+              <p>{sessionMode === 'follow' ? '跟练模式下，系统每次只推进一步。你先跟着手上的魔方做，再按回车或点击按钮，让模型同步进入下一手。' : '双层动作会拆成连续两次 90 度旋转，方便观察每一次真实转层。'}</p>
             </article>
           </div>
         </section>
