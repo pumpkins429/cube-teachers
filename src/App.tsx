@@ -32,7 +32,6 @@ type Lesson = {
 };
 
 type PlaybackMode = 'auto' | 'single' | null;
-type Speed = 0.75 | 1 | 1.5 | 2;
 type SessionMode = 'demo' | 'follow';
 
 const TRACKS: Array<Track | '全部'> = ['全部', '基础手法', '白十字', 'F2L', 'OLL', 'PLL'];
@@ -269,13 +268,11 @@ const LESSONS: Lesson[] = [
   },
 ];
 
-const SPEED_OPTIONS: Speed[] = [0.75, 1, 1.5, 2];
-const SPEED_LABELS: Record<Speed, string> = {
-  0.75: '0.75x',
-  1: '1x',
-  1.5: '1.5x',
-  2: '2x',
-};
+const SPEED_PRESETS = [0.5, 0.75, 1, 1.5, 2, 3];
+
+function formatSpeedLabel(speed: number): string {
+  return `${Number.isInteger(speed) ? speed.toFixed(0) : speed}x`;
+}
 
 function getStepStates(initialState: CubeState, moves: Move[]): CubeState[] {
   const states = [initialState];
@@ -373,7 +370,7 @@ function App() {
   const [activeAnimation, setActiveAnimation] = useState<ActiveAnimation | null>(null);
   const [animationProgress, setAnimationProgress] = useState(0);
   const [playbackMode, setPlaybackMode] = useState<PlaybackMode>(null);
-  const [speed, setSpeed] = useState<Speed>(1);
+  const [speed, setSpeed] = useState(1);
   const [practiceScramble, setPracticeScramble] = useState(() => generateScramble(12));
   const [practiceSequence, setPracticeSequence] = useState<PracticeSequence | null>(null);
   const [lastScramble, setLastScramble] = useState<{ notation: string; moves: Move[]; state: CubeState } | null>(null);
@@ -455,6 +452,11 @@ function App() {
         ? `还剩 ${remainingMoves} 步。你先做，系统后跟。`
         : '已拿到解法，可以切换成跟练继续。'
       : '当前是公式演示区。要进入完整工作流，请先录入魔方状态。';
+
+  const handleSpeedChange = (value: number) => {
+    const normalized = Number.isFinite(value) ? Math.min(4, Math.max(0.25, value)) : 1;
+    setSpeed(Number(normalized.toFixed(2)));
+  };
 
   useEffect(() => {
     animationProgressRef.current = animationProgress;
@@ -906,6 +908,66 @@ function App() {
                     />
                   </div>
                 )}
+                {!isEditorMode && (
+                  <div className="playback-dock">
+                    <div className="playback-dock-main">
+                      <div className="dock-step">
+                        <span className="label">当前动作</span>
+                        <strong>{currentMoveLabel}</strong>
+                        <p>
+                          第 {moves.length === 0 ? 0 : Math.min(currentStep + 1, moves.length)} / {moves.length} 步
+                          {moves.length > 0 ? ` · 剩余 ${remainingMoves} 步` : ''}
+                        </p>
+                      </div>
+                      <div className="dock-controls">
+                        <button onClick={handleStepBack} disabled={currentStep === 0 || activeAnimation !== null}>
+                          上一步
+                        </button>
+                        {sessionMode === 'follow' ? (
+                          <button onClick={handleConfirmFollowStep} disabled={currentStep >= moves.length && activeAnimation === null}>
+                            {activeAnimation ? '完成当前动画' : currentStep >= moves.length ? '已全部完成' : '我做完了'}
+                          </button>
+                        ) : (
+                          <button onClick={handlePlayPause}>
+                            {isAutoPlaying ? '暂停' : activeAnimation ? '继续' : currentStep >= moves.length ? '重新演示' : '播放演示'}
+                          </button>
+                        )}
+                        <button onClick={handleStepForward} disabled={currentStep >= moves.length && activeAnimation === null}>
+                          下一步
+                        </button>
+                        <button onClick={handleReset} disabled={currentStep === 0 && activeAnimation === null}>
+                          回到开头
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="dock-speed">
+                      <span className="label">播放速度</span>
+                      <div className="speed-buttons">
+                        {SPEED_PRESETS.map(option => (
+                          <button
+                            key={option}
+                            className={option === speed ? 'active' : ''}
+                            onClick={() => handleSpeedChange(option)}
+                          >
+                            {formatSpeedLabel(option)}
+                          </button>
+                        ))}
+                      </div>
+                      <label className="custom-speed">
+                        <span>自定义</span>
+                        <input
+                          type="number"
+                          min="0.25"
+                          max="4"
+                          step="0.25"
+                          value={speed}
+                          onChange={(event) => handleSpeedChange(Number(event.target.value))}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className={`controls-panel ${isWorkflowSession ? 'workflow-controls-panel' : ''}`}>
@@ -938,45 +1000,35 @@ function App() {
                 <p>{isFollowSession ? `${displayGoal} 做完当前一步后按回车，或点击“我做完了”。` : displayGoal}</p>
               </div>
 
-              <div className="step-card">
-                <span className="label">当前动作</span>
-                <strong>
-                  第 {moves.length === 0 ? 0 : Math.min(currentStep + 1, moves.length)} / {moves.length} 步
-                </strong>
-                <p>{currentMoveLabel}</p>
-                {!isEditorMode && <p>{currentStepNote}</p>}
-              </div>
-
-              <div className="speed-control">
-                <span className="label">播放速度</span>
-                <div className="speed-buttons">
-                  {SPEED_OPTIONS.map(option => (
-                    <button
-                      key={option}
-                      className={option === speed ? 'active' : ''}
-                      onClick={() => setSpeed(option)}
-                    >
-                      {SPEED_LABELS[option]}
-                    </button>
-                  ))}
-                </div>
-                {!isEditorMode && practiceSequence && (
-                  <div className="mode-buttons">
-                    <button
-                      className={sessionMode === 'demo' ? 'active' : ''}
-                      onClick={() => handleSwitchSessionMode('demo')}
-                    >
-                      演示模式
-                    </button>
-                    <button
-                      className={sessionMode === 'follow' ? 'active' : ''}
-                      onClick={() => handleSwitchSessionMode('follow')}
-                    >
-                      跟练模式
-                    </button>
+              {!isEditorMode && (
+                <>
+                  <div className="step-card">
+                    <span className="label">动作解释</span>
+                    <strong>{currentStepNote}</strong>
+                    <p>{`当前动作：${currentMoveLabel}`}</p>
                   </div>
-                )}
-              </div>
+
+                  {practiceSequence && (
+                    <div className="speed-control">
+                      <span className="label">播放模式</span>
+                      <div className="mode-buttons">
+                        <button
+                          className={sessionMode === 'demo' ? 'active' : ''}
+                          onClick={() => handleSwitchSessionMode('demo')}
+                        >
+                          演示模式
+                        </button>
+                        <button
+                          className={sessionMode === 'follow' ? 'active' : ''}
+                          onClick={() => handleSwitchSessionMode('follow')}
+                        >
+                          跟练模式
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
 
               <div className={`editor-card ${isEditorMode ? 'expanded' : ''}`}>
                 <span className="label">手动录入</span>
@@ -1004,48 +1056,38 @@ function App() {
                 </p>
               </div>
 
-              <div className="controls">
-                <button onClick={handleStepBack} disabled={isEditorMode || currentStep === 0 || activeAnimation !== null}>
-                  上一步
-                </button>
-                {sessionMode === 'follow' && !isEditorMode ? (
-                  <button onClick={handleConfirmFollowStep} disabled={currentStep >= moves.length && activeAnimation === null}>
-                    {activeAnimation ? '完成当前动画' : currentStep >= moves.length ? '已全部完成' : '我做完了'}
+              {isEditorMode && (
+                <div className="controls">
+                  <button onClick={handleResetEditor}>重置录入</button>
+                  <button onClick={handleSolveEditorState} disabled={!editorValidation.valid}>
+                    开始跟练复原
                   </button>
-                ) : (
-                  <button onClick={handlePlayPause} disabled={isEditorMode}>
-                    {isAutoPlaying ? '暂停' : activeAnimation ? '继续' : currentStep >= moves.length ? '重新演示' : '播放演示'}
-                  </button>
-                )}
-                <button onClick={handleStepForward} disabled={isEditorMode || (currentStep >= moves.length && activeAnimation === null)}>
-                  下一步
-                </button>
-                <button onClick={handleReset} disabled={isEditorMode || (currentStep === 0 && activeAnimation === null)}>
-                  回到开头
-                </button>
-              </div>
+                </div>
+              )}
             </div>
             </div>
           </div>
 
-          <div className="lesson-grid">
-            <article className="info-card">
-              <h3>用途</h3>
-              <p>{displayWhy}</p>
-            </article>
-            <article className="info-card">
-              <h3>练习提示</h3>
-              <ul>
-                {displayTips.map(tip => (
-                  <li key={tip}>{tip}</li>
-                ))}
-              </ul>
-            </article>
-            <article className="info-card">
-              <h3>拆解</h3>
-              <p>{sessionMode === 'follow' ? '跟练模式下，系统每次只推进一步。你先跟着手上的魔方做，再按回车或点击按钮，让模型同步进入下一手。' : '双层动作会拆成连续两次 90 度旋转，方便观察每一次真实转层。'}</p>
-            </article>
-          </div>
+          {!isEditorMode && (
+            <div className="lesson-grid">
+              <article className="info-card">
+                <h3>用途</h3>
+                <p>{displayWhy}</p>
+              </article>
+              <article className="info-card">
+                <h3>练习提示</h3>
+                <ul>
+                  {displayTips.map(tip => (
+                    <li key={tip}>{tip}</li>
+                  ))}
+                </ul>
+              </article>
+              <article className="info-card">
+                <h3>拆解</h3>
+                <p>{sessionMode === 'follow' ? '跟练模式下，系统每次只推进一步。你先跟着手上的魔方做，再按回车或点击按钮，让模型同步进入下一手。' : '双层动作会拆成连续两次 90 度旋转，方便观察每一次真实转层。'}</p>
+              </article>
+            </div>
+          )}
         </section>
       </main>
     </div>

@@ -152,6 +152,7 @@ button {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
   gap: 24px;
+  align-items: start;
 }
 
 .sidebar {
@@ -159,6 +160,10 @@ button {
   display: flex;
   flex-direction: column;
   gap: 22px;
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow: hidden;
 }
 
 .sidebar-section h2,
@@ -181,6 +186,9 @@ button {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 6px;
 }
 
 .track-tabs {
@@ -393,10 +401,96 @@ button {
 }
 
 .cube-container {
-  height: 520px;
+  height: min(46vh, 500px);
   border-radius: 22px;
   overflow: hidden;
   background: linear-gradient(180deg, #111827 0%, #1e293b 100%);
+}
+
+.playback-dock {
+  padding: 16px 18px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.68);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.playback-dock-main {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.dock-step {
+  min-width: 0;
+}
+
+.dock-step strong {
+  display: block;
+  margin: 8px 0 6px;
+  font-size: 1.15rem;
+}
+
+.dock-step p {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.dock-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.dock-controls button {
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 1px solid rgba(30, 36, 48, 0.1);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.dock-controls button:nth-child(2) {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
+}
+
+.dock-controls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.dock-speed {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.custom-speed {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.custom-speed input {
+  width: 88px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid rgba(30, 36, 48, 0.12);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
 }
 
 .session-shell {
@@ -774,6 +868,13 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .sidebar,
+  .viewer-card {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+
   .workflow-shell {
     grid-template-columns: 1fr;
   }
@@ -824,6 +925,14 @@ button {
 
   .cube-container {
     height: 360px;
+  }
+
+  .playback-dock-main {
+    flex-direction: column;
+  }
+
+  .dock-controls {
+    justify-content: flex-start;
   }
 
   .face-net {
